@@ -2,7 +2,26 @@ import os
 from datetime import datetime
 import jdatetime
 import pandas as pd
+import requests
 import streamlit as st
+
+# --- تنظیمات تلگرام ---
+TELEGRAM_BOT_TOKEN = "8312163072:AAEbcS4sdaCba6x3V3L75nXinZvddFTMXwU"
+TELEGRAM_CHAT_ID = "8563815567"
+
+
+def send_to_telegram(text):
+  url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+  payload = {
+      "chat_id": TELEGRAM_CHAT_ID,
+      "text": text,
+      "parse_mode": "Markdown",
+  }
+  try:
+    requests.post(url, json=payload)
+  except Exception as e:
+    print(f"Error: {e}")
+
 
 st.set_page_config(page_title="میگرانا - رزرو مشاوره", layout="centered")
 
@@ -40,19 +59,19 @@ st.markdown("---")
 
 # --- بخش آیکون‌ها و اطلاعات راهنما ---
 
-with st.expander("🇪🇸 راهنمای اقامت اسپانیا (کلیک کنید)"):
+with st.expander("🇪🇸 راهنمای اقامت اسپانیا "):
   st.markdown("""اسپانیا چند مسیر مختلف برای دریافت اقامت داره و در حال حاضر یکی از بهترین گزینه‌های قابل‌بررسی برای ایرانی‌ها است. 🇪🇸
 هر مسیر شرایط و جزئیات خاص خودش رو داره؛ بنابراین مهمه متناسب با شرایط پرونده‌تون، مسیر مناسب رو انتخاب کنید.
 با رزرو مشاوره اختصاصی می‌تونید با شرایط و جزئیات هر مسیر آشنا بشید و برای انتخاب مسیر مناسب خودتون، آگاهانه‌تر تصمیم بگیرید. 🤍
 """)
 
-with st.expander("🎓 شرایط ویزای تحصیلی (کلیک کنید)"):
+with st.expander("🎓 شرایط ویزای تحصیلی "):
   st.markdown("""تحصیل در کشورهای مختلف می‌تونه فرصتی برای پیشرفت تحصیلی و ساختن آینده‌ای بهتر باشه. 🌍
 هر کشور شرایط خاص خودش رو برای پذیرش دانشگاه، دریافت ویزا، تمکن مالی و هزینه‌های تحصیل و زندگی داره؛ بنابراین مهمه متناسب با شرایط و هدفتون، کشور و مسیر مناسبی رو انتخاب کنید.
 با رزرو مشاوره اختصاصی در **MIGRANA**، می‌تونید با شرایط و جزئیات تحصیل در کشورهای مختلف آشنا بشید و برای انتخاب مسیر مناسب خودتون، آگاهانه‌تر تصمیم بگیرید. 🤍
 """)
 
-with st.expander("❓ در جلسه مشاوره چه میگذرد؟ (کلیک کنید)"):
+with st.expander("❓ در جلسه مشاوره چه میگذرد؟"):
   st.markdown("""در جلسه اختصاصی، شرایط، اهداف و اولویت‌های شما بررسی می‌شه تا مسیرهای مناسب برای دریافت اقامت رو بشناسید.
 از بررسی روش‌های مختلف اقامت اسپانیا و پروسه تحصیلی و شرایط اقدام گرفته تا مدارک، تمکن مالی، هزینه‌ها، زمان‌بندی و مراحل پرونده، به سؤالاتتون پاسخ داده می‌شه.
 خروجی جلسه، شناخت گزینه‌های متناسب با شرایط شما و یک نقشه راه روشن برای انتخاب مسیر و شروع اقدام خواهد بود. 🤍
@@ -104,8 +123,7 @@ with st.form("client_form"):
     if not new_name or not new_phone:
       st.error("لطفاً نام و شماره تماس خود را وارد کنید!")
     elif (
-        consultation_type == "مشاوره اختصاصی (دارای هزینه)"
-        and not payment_code
+        consultation_type == "مشاوره اختصاصی (دارای هزینه)" and not payment_code
     ):
       st.error("لطفاً شماره پیگیری پرداخت را وارد کنید!")
     else:
@@ -132,6 +150,22 @@ with st.form("client_form"):
 
       df = pd.concat([df, new_data], ignore_index=True)
       df.to_csv(file_name, index=False, encoding="utf-8-sig")
+
+      # ارسال اطلاعات کامل به تلگرام
+      telegram_message = (
+          f"🚨 *فرم رزرو مشاوره جدید ثبت شد!*\n\n"
+          f"📌 نوع مشاوره: {consultation_type}\n"
+          f"👤 نام: {new_name}\n"
+          f"📞 شماره تماس: {new_phone}\n"
+          f"🎓 مدرک تحصیلی: {new_education}\n"
+          f"🎂 سن: {new_age}\n"
+          f"💍 وضعیت تأهل: {marital_status}\n"
+          f"✈️ سابقه سفر: {travel_history}\n"
+          f"💳 کد پیگیری: {payment_code}\n"
+          f"📅 تاریخ ثبت: {current_time}"
+      )
+      send_to_telegram(telegram_message)
+
       st.success(
           "درخواست شما با موفقیت ثبت شد! به زودی با شما تماس خواهیم گرفت."
       )
