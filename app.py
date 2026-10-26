@@ -6,8 +6,8 @@ import requests
 import streamlit as st
 
 # --- تنظیمات تلگرام ---
-TELEGRAM_BOT_TOKEN = "8312163072:AAEbcS4sdaCba6x3V3L75nXinZvddFTMXwU"
-TELEGRAM_CHAT_ID = "8563815567"
+TELEGRAM_BOT_TOKEN = st.secrets["TELEGRAM_BOT_TOKEN"]
+TELEGRAM_CHAT_ID = st.secrets["TELEGRAM_CHAT_ID"]
 
 
 def send_to_telegram(text):
