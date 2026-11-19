@@ -1,4 +1,5 @@
 import os
+import time
 import gspread
 import jdatetime
 from oauth2client.service_account import ServiceAccountCredentials
@@ -104,46 +105,55 @@ with st.form("client_form"):
     ):
       st.error("لطفاً شماره پیگیری پرداخت را وارد کنید!")
     else:
-      try:
-        sheet = get_gsheet()
+      saved = False
+      last_error = None
 
-        # محاسبه شناسه جدید بر اساس تعداد ردیف‌های فعلی شیت
-        existing_records = sheet.get_all_values()
-        new_id = len(existing_records) if len(existing_records) > 0 else 1
+      for attempt in range(3):
+        try:
+          sheet = get_gsheet()
 
-        # دریافت زمان شمسی با اعداد انگلیسی
-        now = jdatetime.datetime.now()
-        current_time = now.strftime("%Y/%m/%d - %H:%M:%S")
-        today_shamsi = now.strftime("%Y/%m/%d")
+          existing_records = sheet.get_all_values()
+          new_id = len(existing_records) if len(existing_records) > 0 else 1
 
-        # تجمیع اطلاعات تکمیلی برای ستون notes_info
-        if consultation_type == "ارزیابی رایگان":
-          notes_info = "نوع درخواست: ارزیابی رایگان"
-        else:
-          notes_info = (
-              f"مدرک: {new_education} | سن: {new_age} | تأهل: {marital_status} |"
-              f" سابقه سفر: {travel_history} | کد پیگیری: {payment_code.strip()}"
-          )
+          now = jdatetime.datetime.now()
+          current_time = now.strftime("%Y/%m/%d - %H:%M:%S")
+          today_shamsi = now.strftime("%Y/%m/%d")
 
-        # ساخت ردیف دقیقاً مطابق ۸ ستون گوگل‌شیت (A تا H)
-        new_row = [
-            new_id,  # A: deal_id
-            current_time,  # B: created_at
-            new_name.strip(),  # C: name
-            new_phone.strip(),  # D: phone
-            consultation_type,  # E: consultation_type
-            notes_info,  # F: notes_info
-            today_shamsi,  # G: alarm_date
-            "12:00",  # H: alarm_time
-        ]
+          if consultation_type == "ارزیابی رایگان":
+            notes_info = "نوع درخواست: ارزیابی رایگان"
+          else:
+            notes_info = (
+                f"مدرک: {new_education} | سن: {new_age} | تأهل:"
+                f" {marital_status} | سابقه سفر: {travel_history} | کد پیگیری:"
+                f" {payment_code.strip()}"
+            )
 
-        sheet.append_row(new_row)
+          new_row = [
+              new_id,
+              current_time,
+              new_name.strip(),
+              new_phone.strip(),
+              consultation_type,
+              notes_info,
+              today_shamsi,
+              "12:00",
+          ]
+
+          sheet.append_row(new_row)
+          saved = True
+          break
+
+        except Exception as e:
+          last_error = e
+          get_gsheet.clear()
+          time.sleep(1)
+
+      if saved:
         st.success(
             "درخواست شما با موفقیت ثبت شد! به زودی با شما تماس خواهیم گرفت."
         )
-
-      except Exception as e:
-        print("GOOGLE_SHEETS_ERROR:", repr(e), flush=True)
+      else:
+        print("GOOGLE_SHEETS_ERROR:", repr(last_error), flush=True)
         st.error(
             "خطایی در ثبت اطلاعات رخ داد. لطفاً مجدداً تلاش کنید یا در واتساپ"
             " پیام دهید."
