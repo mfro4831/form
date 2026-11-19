@@ -1,6 +1,5 @@
 streamlit
-pandas
-jdatetime
-requests
 gspread
 oauth2client
+jdatetime
+pandas
