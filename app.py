@@ -139,4 +139,12 @@ with st.form("client_form"):
 
         sheet.append_row(new_row)
         st.success(
-            "
+            "درخواست شما با موفقیت ثبت شد! به زودی با شما تماس خواهیم گرفت."
+        )
+
+      except Exception:
+        st.error(
+            "خطایی در ثبت اطلاعات رخ داد. لطفاً مجدداً تلاش کنید یا در واتساپ"
+            " پیام دهید."
+        )
+        
