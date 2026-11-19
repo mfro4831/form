@@ -1,22 +1,25 @@
 import os
 import time
 import gspread
+from google.oauth2.service_account import Credentials
 import jdatetime
-from oauth2client.service_account import ServiceAccountCredentials
 import streamlit as st
 
 st.set_page_config(page_title="میگرانا - رزرو مشاوره", layout="centered")
+
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
 
 
 # --- اتصال امن به Google Sheets ---
 @st.cache_resource
 def get_gsheet():
-  scope = [
-      "https://spreadsheets.google.com/feeds",
-      "https://www.googleapis.com/auth/drive",
-  ]
   creds_dict = dict(st.secrets["gcp_service_account"])
-  creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+  if "private_key" in creds_dict and isinstance(creds_dict["private_key"], str):
+    creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+  creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
   client = gspread.authorize(creds)
   sheet = client.open("Migrana_Leads").sheet1
   return sheet
@@ -106,12 +109,15 @@ with st.form("client_form"):
       st.error("لطفاً شماره پیگیری پرداخت را وارد کنید!")
     else:
       saved = False
+      last_stage = ""
       last_error = None
 
       for attempt in range(3):
         try:
+          last_stage = "get_gsheet"
           sheet = get_gsheet()
 
+          last_stage = "get_all_values"
           existing_records = sheet.get_all_values()
           new_id = len(existing_records) if len(existing_records) > 0 else 1
 
@@ -139,6 +145,7 @@ with st.form("client_form"):
               "12:00",
           ]
 
+          last_stage = "append_row"
           sheet.append_row(new_row)
           saved = True
           break
@@ -153,7 +160,9 @@ with st.form("client_form"):
             "درخواست شما با موفقیت ثبت شد! به زودی با شما تماس خواهیم گرفت."
         )
       else:
-        print("GOOGLE_SHEETS_ERROR:", repr(last_error), flush=True)
+        print(
+            f"GOOGLE_SHEETS_ERROR [{last_stage}]:", repr(last_error), flush=True
+        )
         st.error(
             "خطایی در ثبت اطلاعات رخ داد. لطفاً مجدداً تلاش کنید یا در واتساپ"
             " پیام دهید."
