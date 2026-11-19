@@ -142,7 +142,8 @@ with st.form("client_form"):
             "درخواست شما با موفقیت ثبت شد! به زودی با شما تماس خواهیم گرفت."
         )
 
-      except Exception:
+      except Exception as e:
+        print("GOOGLE_SHEETS_ERROR:", repr(e))
         st.error(
             "خطایی در ثبت اطلاعات رخ داد. لطفاً مجدداً تلاش کنید یا در واتساپ"
             " پیام دهید."
